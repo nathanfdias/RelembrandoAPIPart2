@@ -22,12 +22,26 @@ public class AlunoService {
     @Autowired
     private CursoRepository cursoRepository;
 
-    public AlunoDTO salvar(AlunoRequest request) {
-        Curso curso = cursoRepository.findById(request.getCursoId()).orElseThrow();
-        Aluno aluno = Aluno.builder().nome(request.getNome()).curso(curso).build();
-        Aluno salvo = alunoRepository.save(aluno);
-        return new AlunoDTO(salvo.getId(), salvo.getNome(), curso.getNome());
+ public AlunoDTO salvar(AlunoRequest request) {
+    Curso curso = cursoRepository.findById(request.getCursoId()).orElseThrow();
+
+    boolean alunoJaMatriculado = alunoRepository
+        .findAll().stream()
+        .anyMatch(a -> a.getCpf().equals(request.getCpf()) && a.getCurso().getId().equals(curso.getId()));
+
+    if (alunoJaMatriculado) {
+        throw new RuntimeException("Este aluno já está matriculado neste curso.");
     }
+
+    Aluno aluno = Aluno.builder()
+            .nome(request.getNome())
+            .cpf(request.getCpf())
+            .curso(curso)
+            .build();
+
+    Aluno salvo = alunoRepository.save(aluno);
+    return new AlunoDTO(salvo.getId(), salvo.getNome(), curso.getNome());
+}
 
     public List<AlunoDTO> listar() {
         return alunoRepository.findAll().stream()
